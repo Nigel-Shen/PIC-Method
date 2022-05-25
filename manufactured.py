@@ -18,7 +18,7 @@ def findsource(xp, vp, L, it, DT):
 
 L = 2 * np.pi  # Length of the container
 DT = .005  # Length of a time step
-NT = 1600  # number of time steps
+NT = 256  # number of time steps
 NG = 128  # Number of Grid points
 N = 200000  # Number of simulation particles
 WP = 1  # omega p
@@ -57,11 +57,11 @@ picnum = 0
 plt.rcParams['figure.dpi'] = 300
 for it in range(NT):
     print(it)
-    if it % 100 == 0 and picnum < 16:
-        picnum = picnum + 1
-        plt.subplot(4, 4, picnum)
-        phaseSpace(xp, vp, wp, L)
-        plt.title('$t$=%s' % str(np.round(it * DT, 4)))
+    # if it % 100 == 0 and picnum < 16:
+    #     picnum = picnum + 1
+    #     plt.subplot(4, 4, picnum)
+    #     phaseSpace(xp, vp, wp, L)
+    #     plt.title('$t$=%s' % str(np.round(it * DT, 4)))
 
     # Apply bc on the particle position, periodic
     if it == 0:
@@ -101,6 +101,12 @@ for it in range(NT):
     Phi = np.append(Phi, [0])
     Eg = np.transpose([np.append(Phi[NG - 1], Phi[0:NG - 1]) - np.append(Phi[1:NG], Phi[0])]) / (2 * dx)
     # projection p -> q and update of vp
+
+    if it % 16 == 0 and picnum < 16:
+        picnum = picnum + 1
+        plt.subplot(4, 4, picnum)
+        plt.plot(np.linspace(0,127,128), Eg)
+        plt.title('$t$=%s' % str(np.round(it * DT, 4)))
 
     xp = xp + vp * DT
     vp = vp + np.transpose(mat * Eg)[0] * QM * DT
