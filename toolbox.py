@@ -17,19 +17,18 @@ def toPeriodic(x, L, discrete=False):
     return x
 
 
-def phaseSpace(xp, vp, wp, L, Q):
-    pixel=200
-    if len(wp) == 1:
-        wp = np.ones(len(xp))
-    X = L
-    V = 10
-    M = np.zeros([pixel, pixel])
-    x = X / pixel
-    v = 2 * V / pixel
-    for i in range(len(xp)):
-        if np.abs(vp[i]) < 10 and M[int((vp[i] + V) // v), int(xp[i] // x) % pixel] < 600:
-            M[int((vp[i] + V) // v), int(xp[i] // x) % pixel] = M[int((vp[i] + V) // v), int(xp[i] // x) % pixel] + wp[i]
-    plt.imshow(M, vmin=0, vmax=np.max(M), cmap='plasma', interpolation="nearest")
+def phaseSpace(g, fraz, vp, Q):
+    g = g[:, np.abs(vp) < 10]
+    fraz = fraz[:, np.abs(vp) < 10]
+    vp = vp[np.abs(vp) < 10]
+    col = (vp + 10) // (20 / 128)
+    col = col.astype(int)
+
+    mat = sparse.csr_matrix((- fraz[0] * Q, (col, g[0]))) + sparse.csr_matrix((- fraz[1] * Q, (col, g[1])))
+    mat = mat.todense()
+    print(mat.ndim, np.zeros([128 - mat.shape[0], mat.shape[1]]).ndim)
+    mat = np.append(mat, np.zeros([128 - mat.shape[0], mat.shape[1]]), axis=0)
+    plt.imshow(mat, vmin=0, vmax=np.max(mat), cmap='plasma', interpolation="nearest")
     plt.colorbar()
     plt.axis('off')
 
