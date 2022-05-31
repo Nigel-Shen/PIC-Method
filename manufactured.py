@@ -6,26 +6,27 @@ import scipy.sparse.linalg
 from mpmath import findroot, erfc
 import matplotlib.pyplot as plt
 from toolbox import *
+from true import *
 
 
 def findsource(xp, vp, L, it, DT):
     E = Q * N * np.sin(np.pi * it * DT / 4) * np.cos(2 * np.pi * xp / L) / (4 * np.pi)
-    S1 = - 0.5 * (np.sqrt(np.pi / 2) / L) * np.exp(-vp ** 2 / 2) * np.cos(np.pi * it * DT / 4) * np.sin(2 * np.pi * xp / L) / 4
+    S1 = - 0.5 * (np.sqrt(np.pi / 2) / L) * np.exp(- vp ** 2 / 2) * np.cos(np.pi * it * DT / 4) * np.sin(2 * np.pi * xp / L) / 4
     S2 = - 0.5 * (np.sqrt(2 * np.pi) * vp / L ** 2) * np.exp(- vp ** 2 / 2) * np.sin(np.pi * it * DT / 4) * np.cos(
         2 * np.pi * xp / L)
     S3 = - (QM * E / L) * (1 - 0.5 * np.sin(np.pi * it * DT / 4) * np.sin(2 * np.pi * xp / L)) * (np.exp(- vp ** 2 / 2) * vp / np.sqrt(2 * np.pi))
     return S1 + S2 + S3
 
+
 L = 2 * np.pi  # Length of the container
-DT = .005  # Length of a time step
-NT = 256  # number of time steps
+DT = .01  # Length of a time step
+NT = 800  # number of time steps
 NG = 128  # Number of Grid points
-N = 200000  # Number of simulation particles
+N = 1000000  # Number of simulation particles
 WP = 1  # omega p
 QM = -1  # charge per mass
 VT = 1  # Thermal Velocity
 lambdaD = VT / WP
-XP1 = 0.05  # Magnitude of perturbation in x
 mode = 1  # Mode of the sin wave in perturbation
 Q = WP ** 2 * L / (QM * N * lambdaD)  # Charge of a particle
 rho_back = - Q * N / L  # background rho
@@ -57,31 +58,13 @@ picnum = 0
 plt.rcParams['figure.dpi'] = 300
 for it in range(NT):
     print(it)
-    # if it % 100 == 0 and picnum < 16:
+    # if it % 25 == 0 and picnum < 16:
     #     picnum = picnum + 1
     #     plt.subplot(4, 4, picnum)
-    #     phaseSpace(xp, vp, wp, L)
+    #     phaseSpace(xp, vp, wp, L, Q)
     #     plt.title('$t$=%s' % str(np.round(it * DT, 4)))
 
     # Apply bc on the particle position, periodic
-    if it == 0:
-        g1 = np.floor(xp / dx - 0.5).astype(int)  # which grid point to project onto
-        g = np.array([g1, g1 + 1])  # used to determine bc
-        fraz1 = (1 - abs(xp / dx - g1 - 0.5)) * wp
-        fraz = np.array([fraz1, wp - fraz1])
-
-        # apply bc on the projection
-        g = toPeriodic(g, NG, True)
-        mat = sparse.csr_matrix((fraz[0], (p, g[0]))) + sparse.csr_matrix((fraz[1], (p, g[1])))  # interpolation
-        rho = np.asarray((Q / dx) * mat.sum(0) + rho_back * np.ones([1, NG]))
-
-        # computing fields
-        Phi = sparse.linalg.splu(Poisson).solve(-rho[0, 0:NG - 1] * dx ** 2)
-        Phi = np.append(Phi, [0])
-        Eg = np.transpose([np.append(Phi[NG - 1], Phi[0:NG - 1]) - np.append(Phi[1:NG], Phi[0])]) / (2 * dx)
-        # projection p -> q and update of vp
-        vp = vp + np.transpose(mat * Eg)[0] * QM * DT / 2
-        wp = wp + DT * findsource(xp + vp * DT / 2, vp, L, 0.5, DT) / f0
 
     xp = toPeriodic(xp,L)
 
@@ -94,33 +77,43 @@ for it in range(NT):
     # apply bc on the projection
     g = toPeriodic(g, NG, True)
     mat = sparse.csr_matrix((fraz[0], (p, g[0]))) + sparse.csr_matrix((fraz[1], (p, g[1])))  # interpolation
-    rho = np.asarray((Q / dx) * mat.sum(0) + rho_back * np.ones([1, NG]))
+    rho = np.asarray((Q / dx) * mat.sum(0) - (Q * sum(wp) / L) * np.ones([1, NG]))
 
     # computing fields
     Phi = sparse.linalg.splu(Poisson).solve(-rho[0, 0:NG - 1] * dx ** 2)
     Phi = np.append(Phi, [0])
+    # rhohat = np.fft.fft(rho)[0]
+    # print(rhohat)
+    # Phihat = np.append([0], rhohat[1:] / (np.linspace(1, (NG-1)*L/(2*(np.pi)), NG-1)) ** 2)
+    # Phi = np.fft.ifft(Phihat)
     Eg = np.transpose([np.append(Phi[NG - 1], Phi[0:NG - 1]) - np.append(Phi[1:NG], Phi[0])]) / (2 * dx)
     # projection p -> q and update of vp
 
-    if it % 16 == 0 and picnum < 16:
+    if it % 25 ==0 and picnum < 16:
         picnum = picnum + 1
         plt.subplot(4, 4, picnum)
-        plt.plot(np.linspace(0,127,128), Eg)
+        plt.plot(np.linspace(0,NG-1,NG), Eg.transpose()[0]-trueField(it*DT, Q*N), label='%s' %N)
         plt.title('$t$=%s' % str(np.round(it * DT, 4)))
+        #plt.show()
 
-    xp = xp + vp * DT
-    vp = vp + np.transpose(mat * Eg)[0] * QM * DT
-    wp = wp + DT * findsource(xp, vp, L, it, DT) / f0
+    if it == 0:
+        vp = vp + np.abs(np.transpose(mat * Eg)[0]) * QM * DT / 2
+    else:
+        vp = vp + np.abs(np.transpose(mat * Eg)[0]) * QM * DT
+    xp = xp + vp * DT / 2
+    wp = wp + DT * findsource(xp, vp, L, it + 0.5, DT) / f0
+    xp = xp + vp * DT / 2
+
     # energies
     kinetic = sum(Q * wp * vp * vp * 0.5 / QM)
-    potential = sum(mat * Phi * Q * wp)
+    # potential = sum(mat * Phi * Q * wp / 2)
 
     Ek.append(kinetic)
-    Ep.append(potential)
-    Et.append(kinetic + potential)
+    #Ep.append(potential)
+    #Et.append(kinetic + potential)
     momentum.append(sum(Q * wp * vp / QM))
-    PhiMax.append(np.max(np.abs(Phi)))
-
+    #PhiMax.append(np.max(np.abs(Phi)))
+plt.legend()
 plt.show()
 plt.plot(np.linspace(1, NT * DT, NT), Et, label='Total Energy')
 plt.plot(np.linspace(1, NT * DT, NT), Ek, label='Kinetic Energy')
