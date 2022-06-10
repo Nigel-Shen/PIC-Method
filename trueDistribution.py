@@ -21,4 +21,4 @@ def trueField(t, NG):
 
 def truePhi(t, NG, N, Q, L):
     y = np.linspace(0, 1, NG, endpoint=False) + 1 / (2 * NG)
-    return N * Q * L * (1 - 0.5 * np.sin(np.pi * t / 4) * np.sin(2 * np.pi * y)) / (8 * np.pi ** 2)
+    return N * Q * L * (- np.sin(np.pi * t / 4) * np.sin(2 * np.pi * y)) / (8 * np.pi ** 2)
