@@ -36,7 +36,7 @@ for h in [1/2, 3/4, 1, 4/3, 2]:
     dx = L / NG  # cell length
 
     i = 0
-    xp = np.random.rand(N) * L
+    xp = np.linspace(0,1, N, endpoint=False) * L
     vp = np.random.randn(N) * VT
     # while i < N:
     #     v = np.random.rand(1, 2) * np.array([8, 1]) - np.array([4, 0])
@@ -88,13 +88,14 @@ for h in [1/2, 3/4, 1, 4/3, 2]:
         Eg = np.transpose([np.append(Phi[NG - 1], Phi[0:NG - 1]) - np.append(Phi[1:NG], Phi[0])]) / (2 * dx)
         # projection p -> q and update of vp
 
-        # if it % 50 ==0 and picnum < 16:
-        #     picnum = picnum + 1
-        #     plt.subplot(4, 4, picnum)
-        #     plt.plot(np.linspace(0,NG-1,NG), Eg.transpose()[0]-trueField(it*DT,NG) * Q * N / (4 * np.pi), label='%s' %N)
-        #     plt.title('$t$=%s' % str(np.round(it * DT, 4)))
-        #     plt.savefig('field.png')
-        #     #plt.show()
+        if it % 25 ==0 and picnum < 16:
+            picnum = picnum + 1
+            plt.subplot(4, 4, picnum)
+            plt.plot(np.linspace(0,NG-1,NG),Eg.transpose()[0], label='%s' %N)
+            plt.title('$t$=%s' % str(np.round(it * DT, 4)))
+            plt.savefig('field.png')
+            
+            #plt.show()
         if it == 0:
             vp = vp + np.abs(np.transpose(mat * Eg)[0]) * QM * DT / 2
         else:
@@ -125,6 +126,7 @@ for h in [1/2, 3/4, 1, 4/3, 2]:
     dE.append(np.sqrt(np.sum((Eg.transpose()[0] - trueField(it * DT, NG) * Q * N / (4 * np.pi)) ** 2) / NG))
     dPhi.append(np.sqrt(np.sum((Phi - truePhi(it * DT, NG, N, Q, L)) ** 2) / NG))
     dRho.append(np.sqrt(np.sum((rho - trueRho(it * DT, NG, N, Q, L)) ** 2) / NG))
+plt.cla()
 plt.plot([1/2, 3/4, 1, 4/3, 2], dE, label='Electric Field Convergence')
 plt.plot(np.linspace(1/2, 2, 20), 1.1*10**(-3)*np.linspace(1/2,2,20) ** 2, label='Order 2 Reference')
 plt.xlabel('h(Generalized Discretization Parameter)')
