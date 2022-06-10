@@ -65,6 +65,6 @@ def findDecayRate(k):
 
 def fieldSolve(rho, L):
     rhoHat = np.fft.rfft(rho)
-    phiHat = np.append([0], - rhoHat[1:] * (L / (2 * np.pi * np.arange(1, rho.size/2 + 1))) ** 2)
+    phiHat = np.append([0], rhoHat[1:] * (L / (2 * np.pi * np.arange(1, rhoHat.size))) ** 2)
     phi = np.fft.irfft(phiHat)
     return phi
