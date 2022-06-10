@@ -61,3 +61,10 @@ def findDecayRate(k):
         lambda x: 1 + 1 / k ** 2 + 1j * x * cmath.exp(-x ** 2 / (2 * k ** 2)) * erfc(-1j * x / (math.sqrt(2) * k)) / (
                 math.sqrt(2 / math.pi) * k ** 3), 0.01j, solver='muller')))
     return gamma
+
+
+def fieldSolve(rho, L):
+    rhoHat = np.fft.rfft(rho)
+    phiHat = np.append([0], - rhoHat[1:] * (L / (2 * np.pi * np.arange(1, rho.size/2 + 1))) ** 2)
+    phi = np.fft.irfft(phiHat)
+    return phi
