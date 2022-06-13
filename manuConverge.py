@@ -44,7 +44,7 @@ for h in [1/2, 3/4, 1, 4/3, 2]:
     #         vp[i] = v[0, 0]
     #         i = i + 1
     wp = np.ones(N)
-    f0 = np.exp(- vp ** 2 / (2 * VT)) * np.sqrt(VT)/ (L * np.sqrt(2 * np.pi))
+    f0 = Q * N * np.exp(- vp ** 2 / (2 * VT)) * np.sqrt(VT) / (L * np.sqrt(2 * np.pi))
     # Perturbation
     p = np.linspace(0, N - 1, N).astype(int)
     un = np.ones(NG - 1)
@@ -101,7 +101,7 @@ for h in [1/2, 3/4, 1, 4/3, 2]:
         else:
             vp = vp + np.abs(np.transpose(mat * Eg)[0]) * QM * DT
         xp = xp + vp * DT / 2
-        wp = wp + DT * findsource(xp, vp, L, it + 0.5, DT) / f0
+        wp = wp + DT * findsource(xp, vp, L, it + 0.5, DT) * Q * N / f0
         xp = xp + vp * DT / 2
 
         print(it, max(Eg))
