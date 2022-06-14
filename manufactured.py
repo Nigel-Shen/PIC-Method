@@ -15,26 +15,24 @@ def findsource(xp, vp, L, it, DT):
     S2 = - 0.5 * (np.sqrt(2 * np.pi) * vp / L ** 2) * np.exp(- vp ** 2 / 2) * np.sin(np.pi * it * DT / 4) * np.cos(
         2 * np.pi * xp / L)
     S3 = - (QM * E / L) * (1 - 0.5 * np.sin(np.pi * it * DT / 4) * np.sin(2 * np.pi * xp / L)) * (np.exp(- vp ** 2 / 2) * vp / np.sqrt(2 * np.pi))
-    return S1 + S2 + S3
+    return (S1 + S2 + S3) * Q * N
 
 
-L = 2 * np.pi  # Length of the container
-DT = .01  # Length of a time step
-NT = 800  # number of time steps
-NG = 128  # Number of Grid points
-N = 1000000  # Number of simulation particles
+L = 2 * np.pi # Length of the container
+DT = .02  # Length of a time step
+NT = 400  # number of time steps
+NG = 256  # Number of Grid points
+N = 200000  # Number of simulation particles
 WP = 1  # omega p
+DT = DT * WP
 QM = -1  # charge per mass
 VT = 1  # Thermal Velocity
 lambdaD = VT / WP
-mode = 1  # Mode of the sin wave in perturbation
-Q = WP ** 2 * L / (QM * N * lambdaD)  # Charge of a particle
+L = L / lambdaD
+Q = WP ** 2 * L / (QM * N)  # Charge of a particle
 rho_back = - Q * N / L  # background rho
 dx = L / NG  # cell length
-k = lambdaD * mode * 2 * np.pi / L
-
-i = 0
-xp = np.random.rand(N) * L
+xp = np.linspace(0, L, N, endpoint=False)
 vp = np.random.randn(N)
 # while i < N:
 #     v = np.random.rand(1, 2) * np.array([8, 1]) - np.array([4, 0])
@@ -42,7 +40,7 @@ vp = np.random.randn(N)
 #         vp[i] = v[0, 0]
 #         i = i + 1
 wp = np.ones(N)
-f0 = np.exp(- vp ** 2 / 2) / (L * np.sqrt(2 * np.pi))
+f0 = N * Q * np.exp(- vp ** 2 / 2) * np.sqrt(1 / (2 * np.pi)) / L
 # Perturbation
 p = np.linspace(0, N - 1, N).astype(int)
 un = np.ones(NG - 1)
@@ -58,11 +56,11 @@ picnum = 0
 plt.rcParams['figure.dpi'] = 300
 for it in range(NT):
     print(it)
-    # if it % 25 == 0 and picnum < 16:
-    #     picnum = picnum + 1
-    #     plt.subplot(4, 4, picnum)
-    #     phaseSpace(xp, vp, wp, L, Q)
-    #     plt.title('$t$=%s' % str(np.round(it * DT, 4)))
+    if it % 25 == 1 and picnum < 16:
+        picnum = picnum + 1
+        plt.subplot(4, 4, picnum)
+        phaseSpace(g, fraz, vp, Q)
+        plt.title('$t$=%s' % str(np.round(it * DT, 4)))
 
     # Apply bc on the particle position, periodic
 
@@ -77,29 +75,26 @@ for it in range(NT):
     # apply bc on the projection
     g = toPeriodic(g, NG, True)
     mat = sparse.csr_matrix((fraz[0], (p, g[0]))) + sparse.csr_matrix((fraz[1], (p, g[1])))  # interpolation
-    rho = np.asarray((Q / dx) * mat.sum(0) - (Q * sum(wp) / L) * np.ones([1, NG]))
+    rho = np.asarray((Q / dx) * mat.sum(0) - (Q * sum(wp) / L) * np.ones([1, NG]))[0]
 
     # computing fields
-    Phi = sparse.linalg.splu(Poisson).solve(-rho[0, 0:NG - 1] * dx ** 2)
-    Phi = np.append(Phi, [0])
-    # rhohat = np.fft.fft(rho)[0]
-    # print(rhohat)
-    # Phihat = np.append([0], rhohat[1:] / (np.linspace(1, (NG-1)*L/(2*(np.pi)), NG-1)) ** 2)
-    # Phi = np.fft.ifft(Phihat)
+    # Phi = sparse.linalg.splu(Poisson).solve(-rho[0, 0:NG - 1] * dx ** 2)
+    # Phi = np.append(Phi, [0])
+    Phi = fieldSolve(rho, L)
     Eg = np.transpose([np.append(Phi[NG - 1], Phi[0:NG - 1]) - np.append(Phi[1:NG], Phi[0])]) / (2 * dx)
     # projection p -> q and update of vp
-
-    if it % 25 ==0 and picnum < 16:
-        picnum = picnum + 1
-        plt.subplot(4, 4, picnum)
-        plt.plot(np.linspace(0,NG-1,NG), Eg.transpose()[0]-trueField(it*DT, Q*N), label='%s' %N)
-        plt.title('$t$=%s' % str(np.round(it * DT, 4)))
-        #plt.show()
+    #
+    # if it % 25 ==0 and picnum < 16:
+    #     picnum = picnum + 1
+    #     plt.subplot(4, 4, picnum)
+    #     plt.plot(np.linspace(0,NG-1,NG), Eg.transpose()[0], label='%s' %N)
+    #     plt.title('$t$=%s' % str(np.round(it * DT, 4)))
+    #     #plt.show()
 
     if it == 0:
-        vp = vp + np.abs(np.transpose(mat * Eg)[0]) * QM * DT / 2
+        vp = vp + np.transpose(mat * Eg)[0] * QM * DT / (2 * wp)
     else:
-        vp = vp + np.abs(np.transpose(mat * Eg)[0]) * QM * DT
+        vp = vp + np.transpose(mat * Eg)[0] * QM * DT / wp
     xp = xp + vp * DT / 2
     wp = wp + DT * findsource(xp, vp, L, it + 0.5, DT) / f0
     xp = xp + vp * DT / 2
@@ -115,11 +110,11 @@ for it in range(NT):
     #PhiMax.append(np.max(np.abs(Phi)))
 plt.legend()
 plt.show()
-plt.plot(np.linspace(1, NT * DT, NT), Et, label='Total Energy')
-plt.plot(np.linspace(1, NT * DT, NT), Ek, label='Kinetic Energy')
-plt.plot(np.linspace(1, NT * DT, NT), Ep, label='Potential Energy')  # Total Energy at a given time
-plt.legend()
-plt.show()
-plt.plot(np.linspace(1, NT * DT, NT), momentum, label='Momentum')
-plt.legend()
-plt.show()
+# plt.plot(np.linspace(1, NT * DT, NT), Et, label='Total Energy')
+# plt.plot(np.linspace(1, NT * DT, NT), Ek, label='Kinetic Energy')
+# plt.plot(np.linspace(1, NT * DT, NT), Ep, label='Potential Energy')  # Total Energy at a given time
+# plt.legend()
+# plt.show()
+# plt.plot(np.linspace(1, NT * DT, NT), momentum, label='Momentum')
+# plt.legend()
+# plt.show()
