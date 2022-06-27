@@ -76,7 +76,7 @@ for h in [1 / 2, 3 / 4, 1, 4 / 3, 2]:
         # apply bc on the projection
         g = toPeriodic(g, NG, True)
         mat = sparse.csr_matrix((fraz[0], (p, g[0]))) + sparse.csr_matrix((fraz[1], (p, g[1])))  # interpolation
-        rho = np.asarray((Q / dx) * mat.sum(0) + (Q * sum(wp) / L) * np.ones([1, NG]))[0]
+        rho = np.asarray((Q / dx) * mat.sum(0) - (Q * sum(wp) / L) * np.ones([1, NG]))[0]
 
         # if it % 25 == 0 and picnum < 16:
         #     picnum = picnum + 1
