@@ -66,7 +66,7 @@ for it in range(NT):
     g = toPeriodic(g, NG, True)
     mat = sparse.csr_matrix((fraz[0], (p, g[0]))) + sparse.csr_matrix((fraz[1], (p, g[1]))) + sparse.csr_matrix(
         (fraz[2], (p, g[2])))  # interpolation
-    rho = np.asarray((Q / dx) * mat.sum(0) - rho_back * np.ones([1, NG]))[0]
+    rho = np.asarray((Q / dx) * mat.sum(0) + rho_back * np.ones([1, NG]))[0]
 
     # computing fields
     Phi = fieldSolve(rho, L)
