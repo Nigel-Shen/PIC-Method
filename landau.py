@@ -81,7 +81,7 @@ for it in range(NT):
 
     # energies
     kinetic = sum(Q * vp ** 2 * 0.5 / QM)
-    potential = sum(mat * Phi * Q / 2)
+    potential = sum(rho * Phi * dx / 2)
 
     Ek.append(kinetic)
     Ep.append(potential)
