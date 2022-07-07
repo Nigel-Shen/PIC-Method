@@ -2,17 +2,17 @@ import scipy.sparse.linalg
 from toolbox import *
 
 
-L = 16  # Length of the container
-DT = .2  # Length of a time step
-NT = 400  # number of time steps
-NG = 128  # Number of Grid points
-N = 1000000  # Number of simulation particles
+L = 32  # Length of the container
+DT = .02  # Length of a time step
+NT = 1000 # number of time steps
+NG = 32  # Number of Grid points
+N = 20000  # Number of simulation particles
 WP = 1  # omega p
 QM = -1  # charge per mass
 VT = 1  # Thermal Velocity
 lambdaD = VT / WP
-XP1 = 0.03  # Magnitude of perturbation in x
-mode = 1  # Mode of the sin wave in perturbation
+XP1 = 0.2  # Magnitude of perturbation in x
+mode = 2  # Mode of the sin wave in perturbation
 Q = WP ** 2 * L / (QM * N)  # Charge of a particle
 rho_back = - Q * N / L  # background rho
 dx = L / NG  # cell length
@@ -20,7 +20,6 @@ k = lambdaD * mode * 2 * np.pi / L
 period = 2 * np.pi / float(np.real(findroot(
     lambda x: 1 + 1 / k ** 2 + 1j * x * cmath.exp(-x ** 2 / (2 * k ** 2)) * erfc(-1j * x / (math.sqrt(2) * k)) / (
                 math.sqrt(2 / math.pi) * k ** 3), 0.01j, solver='muller')))
-
 i = 0
 xp = np.zeros(N)
 while i < N:
@@ -29,6 +28,18 @@ while i < N:
         xp[i] = x[0, 0]
         i = i + 1
 vp = VT * np.random.randn(N)
+#xp0 = np.zeros(int(N / mode))
+#vp0 = VT * np.random.randn(int(N / mode))
+#while i < int(N / mode):
+#    x = np.random.rand(1, 2) * np.array([L / mode, N / L * (1 + XP1)])
+#    if x[0, 1] < N / L * (1 + XP1 * np.sin(2 * np.pi * x[0, 0] / L * mode)):
+#        xp0[i] = x[0, 0]
+#        i = i + 1
+#xp = xp0
+#vp = vp0
+#for j in range(mode - 1):
+#    xp = np.append(xp, xp0 + L * (j + 1) / mode)
+#    vp = np.append(vp, vp0)
 # Perturbation
 p = np.linspace(0, N - 1, N).astype(int)
 un = np.ones(NG - 1)
@@ -48,7 +59,7 @@ for it in range(NT):
     if it % 25 == 1 and picnum < 16:
         picnum = picnum + 1
         plt.subplot(4, 4, picnum)
-        phaseSpace(g, fraz, vp, Q)
+        phaseSpace(g, fraz, vp, Q, VT)
         plt.title('$t$=%s' % str(np.round(it * DT,4)))
 
     xp = toPeriodic(xp, L)
@@ -67,10 +78,13 @@ for it in range(NT):
     mat = sparse.csr_matrix((fraz[0], (p, g[0]))) + sparse.csr_matrix((fraz[1], (p, g[1]))) + sparse.csr_matrix(
         (fraz[2], (p, g[2])))  # interpolation
     rho = np.asarray((Q / dx) * mat.sum(0) + rho_back * np.ones([1, NG]))[0]
-
+    # print(rho)
     # computing fields
-    Phi = fieldSolve(rho, L)
-    Eg = np.transpose([np.append(Phi[NG - 1], Phi[0:NG - 1]) - np.append(Phi[1:NG], Phi[0])]) / (2 * dx)
+    Phi, Eg= fieldSolve(rho, L)
+    Eg = np.transpose([Eg])
+    #Eg = np.transpose([np.append(Phi[NG - 1], Phi[0:NG - 1]) - np.append(Phi[1:NG], Phi[0])]) / (2 * dx)
+    #print(Eg)
+    
     # projection p -> q and update of vp
 
     if it == 0:
@@ -87,26 +101,31 @@ for it in range(NT):
     Ep.append(potential)
     E.append(kinetic + potential)
     momentum.append(sum(Q * vp / QM))
-    PhiMax.append(np.max(np.abs(Phi)))
+    PhiMax.append(np.sqrt(np.sum(Phi ** 2) / NG))
 
 plt.show()
-plt.plot(np.linspace(1, NT * DT, NT), E, label='Total Energy')
-plt.plot(np.linspace(1, NT * DT, NT), Ek, label='Kinetic Energy')
-# plt.plot(np.linspace(1, NT * DT, NT), Ep, label='Potential Energy')  # Total Energy at a given time
+plt.close()
+plt.plot(np.linspace(0, NT * DT, NT), E/E[0], label='Total Energy')
+#plt.plot(np.linspace(0, NT * DT, NT), Ek, label='Kinetic Energy')
+plt.plot(np.linspace(0, NT * DT, NT), Ep, label='Potential Energy')  # Total Energy at a given time
 plt.legend()
 plt.show()
-# plt.plot(np.linspace(1,L,NG),Phi)    # Discrete Potential Field at a given time
+plt.close()
+plt.plot(np.linspace(1,L,NG),rho)    # Discrete Potential Field at a given time
+plt.show()
+plt.close()
 a = np.linspace(0, (NT - 1) * DT, NT)
 plt.plot(a, PhiMax, label='$\phi_{max}$')
 gamma = float(np.imag(findroot(
     lambda x: 1 + 1 / k ** 2 + 1j * x * cmath.exp(-x ** 2 / (2 * k ** 2)) * erfc(-1j * x / (math.sqrt(2) * k)) / (
                 math.sqrt(2 / math.pi) * k ** 3), 0.01j, solver='muller')))
 print(gamma)
-b = PhiMax[0] * np.exp(a[0:60] * gamma)
-plt.plot(a[0:60], b, label='predicted decay rate')
+b = PhiMax[0] * np.exp(a[0:600] * gamma)
+plt.plot(a[0:600], b, label='predicted decay rate')
 plt.yscale('log')
 plt.legend()
 plt.show()
+plt.close()
 plt.plot(np.linspace(1, NT * DT, NT), momentum, label='Momentum')
 plt.legend()
 plt.show()
