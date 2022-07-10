@@ -58,7 +58,7 @@ plt.rcParams['figure.dpi'] = 300
 for it in range(NT):
     print(it)
     xp = toPeriodic(xp, L)
-    rhoHat = Q * Shat * finufft.nufft1d1(xp * 2 * np.pi / L, np.ones(N)+0j, NF, eps=1e-12, modeord=1)
+    rhoHat = Q * Shat * finufft.nufft1d1(xp * 2 * np.pi / L, np.ones(N)+0j, NF, eps=1e-12, modeord=1) * NF / L
     rhoHat = np.append(rhoHat[0], rhoHat[:0:-1]) # Somehow the documentation was wrong
     # computing fields
     Phihat, Ehat = fieldSolve(rhoHat, L, hat=True)
@@ -75,7 +75,7 @@ for it in range(NT):
 
     # energies
     kinetic = sum(Q * vp ** 2 * 0.5 / QM)
-    potential1 = - sum(rhoHat * Phihat / (2 * L))  # DON'T KNOW WHERE THE - SIGN COMES FROM
+    potential1 = sum(rhoHat * np.conjugate(Phihat) * L / (2 * NF ** 2))
     Phi = np.fft.ifft(Phihat)
     Ek.append(kinetic)
     Ep.append(potential1)
