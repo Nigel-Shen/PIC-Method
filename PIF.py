@@ -58,7 +58,7 @@ plt.rcParams['figure.dpi'] = 300
 for it in range(NT):
     print(it)
     xp = toPeriodic(xp, L)
-    rhoHat = Q * Shat * np.sum(np.exp(-2j * np.pi * np.kron(xp, np.transpose([K])) / L), axis = 1)
+    rhoHat = Q * Shat * np.sum(np.exp(-2j * np.pi * np.kron(xp, np.transpose([K])) / L), axis = 1) * NF / L
     
     # computing fields
     Phihat, Ehat = fieldSolve(rhoHat, L, hat=True)
@@ -74,7 +74,7 @@ for it in range(NT):
 
     # energies
     kinetic = sum(Q * vp ** 2 * 0.5 / QM)
-    potential1 = - sum(rhoHat * Phihat / (2 * L)) # DON'T KNOW WHERE THE - SIGN COMES FROM
+    potential1 = - sum(rhoHat * np.conjugate(Phihat) * L / (2 * NF ** 2)) # DON'T KNOW WHERE THE - SIGN COMES FROM
     rho = np.fft.ifft(rhoHat)
     Phi = np.fft.ifft(Phihat)
     #potential2 = sum(rho * Phi * L / (2 * NF))
