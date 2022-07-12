@@ -5,14 +5,15 @@ from toolbox import *
 L = 32  # Length of the container
 DT = .02  # Length of a time step
 NT = 1000  # number of time steps
-NF = 32  # Number of Fourier Modes
+NF = 16 # Number of Fourier Modes
+PL = 2
 Ka = np.arange(1, NF // 2)
 Kb = Ka[::-1]
-K = np.append(np.append(Ka, [NF // 2]), - Kb)
-Shat = (NF * np.sin(np.pi * K / NF) / (np.pi * K)) ** 2
+K = np.append(np.append(Ka, [- NF // 2]), - Kb)
+Shat = (L * np.sin(np.pi * K * PL / L) / (np.pi * K * PL)) ** 2
 Shat = np.append([1], Shat)
 K = np.append([0], K)
-N = 20000  # Number of simulation particles
+N = 10000  # Number of simulation particles
 WP = 1  # omega p
 QM = -1  # charge per mass
 VT = 1  # Thermal Velocity
@@ -58,7 +59,7 @@ plt.rcParams['figure.dpi'] = 300
 for it in range(NT):
     print(it)
     xp = toPeriodic(xp, L)
-    rhoHat = Q * Shat * np.sum(np.exp(-2j * np.pi * np.kron(xp, np.transpose([K])) / L), axis = 1) * NF / L
+    rhoHat = Q * Shat * np.sum(np.exp(-2j * np.pi * np.kron(xp, np.transpose([K])) / L), axis = 1)
     
     # computing fields
     Phihat, Ehat = fieldSolve(rhoHat, L, hat=True)
@@ -74,11 +75,8 @@ for it in range(NT):
 
     # energies
     kinetic = sum(Q * vp ** 2 * 0.5 / QM)
-    potential1 = - sum(rhoHat * np.conjugate(Phihat) * L / (2 * NF ** 2)) # DON'T KNOW WHERE THE - SIGN COMES FROM
-    rho = np.fft.ifft(rhoHat)
+    potential1 = sum(rhoHat * np.conjugate(Phihat) / (2 * L))
     Phi = np.fft.ifft(Phihat)
-    #potential2 = sum(rho * Phi * L / (2 * NF))
-    #print(Phi)
     Ek.append(kinetic)
     Ep.append(potential1)
     #Ep2.append(potential1)
@@ -92,16 +90,16 @@ plt.plot(np.linspace(0, NT * DT, NT), E / E[0], label='Total Energy')
 plt.legend()
 plt.show()
 plt.close()
-plt.plot(np.linspace(1,L,NF),rho)    # Discrete Potential Field at a given time
+plt.plot(np.arange(NF), np.fft.ifft(rhoHat))
 plt.show()
 plt.close()
 a = np.linspace(0, (NT - 1) * DT, NT)
 plt.plot(a, PhiMax, label='$\phi_{max}$')
-gamma = float(np.imag(findroot(
+gamma = np.sqrt(2) * float(np.imag(findroot(
     lambda x: 1 + 1 / k ** 2 + 1j * x * cmath.exp(-x ** 2 / (2 * k ** 2)) * erfc(-1j * x / (math.sqrt(2) * k)) / (
                 math.sqrt(2 / math.pi) * k ** 3), 0.01j, solver='muller')))
 print(gamma)
-b = PhiMax[0] * np.exp(a[0:600] * gamma)
+b = PhiMax[int(period // (2 * DT))] * np.exp((a[0:600]- period / 2) * gamma)
 plt.plot(a[0:600], b, label='predicted decay rate')
 plt.yscale('log')
 plt.legend()
@@ -110,3 +108,4 @@ plt.close()
 plt.plot(np.linspace(1, NT * DT, NT), momentum, label='Momentum')
 plt.legend()
 plt.show()
+
