@@ -11,7 +11,7 @@ Ka = np.arange(1, NF // 2)
 Kb = Ka[::-1]
 K = np.append(np.append(Ka, [- NF // 2]), - Kb)
 Shat = (L * np.sin(np.pi * K * PL / L) / (np.pi * K * PL)) ** 2
-Shat = np.append([1 / PL], Shat)
+Shat = np.append([1], Shat)
 K = np.append([0], K)
 N = 40000  # Number of simulation particles
 WP = 1  # omega p
@@ -59,7 +59,7 @@ plt.rcParams['figure.dpi'] = 300
 for it in range(NT):
     print(it)
     xp = toPeriodic(xp, L)
-    rhoHat = Q * Shat * finufft.nufft1d1(xp * 2 * np.pi / L, np.ones(N)+0j, NF, eps=1e-12, modeord=1) * NF / L
+    rhoHat = Q * Shat * finufft.nufft1d1(xp * 2 * np.pi / L, np.ones(N)+0j, NF, eps=1e-12, modeord=1)
     rhoHat = np.append(rhoHat[0], rhoHat[:0:-1]) # Somehow the documentation was wrong
     # computing fields
     Phihat, Ehat = fieldSolve(rhoHat, L, hat=True)
