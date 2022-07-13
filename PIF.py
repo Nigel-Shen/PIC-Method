@@ -76,7 +76,7 @@ for it in range(NT):
     # energies
     kinetic = sum(Q * vp ** 2 * 0.5 / QM)
     potential1 = sum(rhoHat * np.conjugate(Phihat) / (2 * L))
-    Phi = np.fft.ifft(Phihat)
+    Phi = np.fft.ifft(Phihat) * NF / L
     Ek.append(kinetic)
     Ep.append(potential1)
     #Ep2.append(potential1)
